@@ -6,54 +6,50 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import { Sparkles, Loader2 } from "lucide-react";
-import { useRegisterMutation } from "../store/apiSlice";
-import { toast } from "sonner";
-
+import { Sparkles, Loader2, Lock, Mail } from "lucide-react";
+import { useLoginMutation } from "../store/apiSlice";
 import { setCredentials } from "../store/authSlice";
 import { useAppDispatch } from "../store/hooks";
+import { toast } from "sonner";
 
-const signupSchema = z.object({
-  company_name: z.string().min(2, "Company name must be at least 2 characters"),
+const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z.string().min(1, "Password is required"),
 });
 
-type SignupFormValues = z.infer<typeof signupSchema>;
+type LoginFormValues = z.infer<typeof loginSchema>;
 
-export function SignupPage() {
+export function LoginPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const [registerUser, { isLoading }] = useRegisterMutation();
+  const [loginUser, { isLoading }] = useLoginMutation();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<SignupFormValues>({
-    resolver: zodResolver(signupSchema),
-    defaultValues: {
-      company_name: "",
-      email: "",
-      password: "",
-    },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "" },
   });
 
-  const onSubmit = async (data: SignupFormValues) => {
+  const onSubmit = async (data: LoginFormValues) => {
     try {
-      const result = await registerUser(data).unwrap();
+      const result = await loginUser(data).unwrap();
       dispatch(setCredentials({ access_token: result.access_token, user: result.user }));
-      toast.success("Account created successfully!");
-      navigate("/onboarding");
+      toast.success("Welcome back!");
+      navigate("/dashboard");
     } catch (err: any) {
-      toast.error(err.data?.detail || "Failed to create account. Please try again.");
+      const msg = err?.data?.detail ?? "Invalid email or password.";
+      toast.error(typeof msg === "string" ? msg : "Login failed. Please try again.");
     }
   };
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
-        <div className="flex items-center justify-center mb-8 gap-2">
+        {/* Logo */}
+        <div className="flex items-center justify-center mb-8 gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
             <Sparkles className="w-6 h-6 text-primary-foreground" />
           </div>
@@ -62,73 +58,77 @@ export function SignupPage() {
 
         <Card className="border-border bg-card/50 backdrop-blur shadow-xl">
           <CardHeader>
-            <CardTitle className="text-card-foreground">Create your account</CardTitle>
+            <CardTitle className="text-card-foreground text-xl">Welcome back</CardTitle>
             <CardDescription className="text-muted-foreground">
-              Start automating your social media presence with AI
+              Sign in to manage your social media presence
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              {/* Email */}
               <div className="space-y-2">
-                <Label htmlFor="company_name" className="text-foreground">Company Name</Label>
-                <Input
-                  id="company_name"
-                  type="text"
-                  placeholder="Acme Corp"
-                  {...register("company_name")}
-                  className="bg-input text-foreground placeholder:text-muted-foreground"
-                />
-                {errors.company_name && (
-                  <p className="text-destructive text-xs">{errors.company_name.message}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-foreground">Email</Label>
+                <Label htmlFor="email" className="text-foreground flex items-center gap-2">
+                  <Mail className="w-3.5 h-3.5" />
+                  Email
+                </Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="you@example.com"
                   {...register("email")}
                   className="bg-input text-foreground placeholder:text-muted-foreground"
+                  autoComplete="email"
                 />
                 {errors.email && (
                   <p className="text-destructive text-xs">{errors.email.message}</p>
                 )}
               </div>
+
+              {/* Password */}
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-foreground">Password</Label>
+                <Label htmlFor="password" className="text-foreground flex items-center gap-2">
+                  <Lock className="w-3.5 h-3.5" />
+                  Password
+                </Label>
                 <Input
                   id="password"
                   type="password"
                   placeholder="••••••••"
                   {...register("password")}
                   className="bg-input text-foreground placeholder:text-muted-foreground"
+                  autoComplete="current-password"
                 />
                 {errors.password && (
                   <p className="text-destructive text-xs">{errors.password.message}</p>
                 )}
               </div>
+
+              {/* Submit */}
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
               >
                 {isLoading ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : null}
-                Get Started
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Signing in…
+                  </>
+                ) : (
+                  "Sign In"
+                )}
               </Button>
             </form>
           </CardContent>
         </Card>
 
         <p className="text-center text-sm text-muted-foreground mt-4">
-          Already have an account?{" "}
-          <button 
-            onClick={() => navigate("/login")} 
-            className="text-primary hover:underline"
+          Don't have an account?{" "}
+          <button
+            onClick={() => navigate("/signup")}
+            className="text-primary hover:underline font-medium"
           >
-            Sign in
+            Sign up free
           </button>
         </p>
       </div>

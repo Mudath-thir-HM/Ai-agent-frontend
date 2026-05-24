@@ -1,15 +1,33 @@
 import { memo, useState } from "react";
-import { Handle, Position, NodeProps, NodeResizer } from "reactflow";
+import { Handle, Position, NodeProps, NodeResizer, useReactFlow } from "reactflow";
 import { Sparkles, ImageIcon, Type } from "lucide-react";
 
 type Mode = "caption" | "image";
 
 const STYLE_TAGS = ["Minimalist", "Vibrant", "Professional", "Playful", "Editorial", "Bold"];
 
-export const PromptNode = memo(({ data, selected }: NodeProps) => {
+export const PromptNode = memo(({ id, data, selected }: NodeProps) => {
+  const { setNodes } = useReactFlow();
   const [mode, setMode] = useState<Mode>(data.mode ?? "caption");
   const [prompt, setPrompt] = useState<string>(data.prompt ?? "");
   const [selectedStyle, setSelectedStyle] = useState<string>("Professional");
+
+  const updateNodeData = (updates: any) => {
+    setNodes((nds) =>
+      nds.map((n) => (n.id === id ? { ...n, data: { ...n.data, ...updates } } : n))
+    );
+  };
+
+  const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setPrompt(val);
+    updateNodeData({ prompt: val });
+  };
+
+  const handleModeChange = (val: Mode) => {
+    setMode(val);
+    updateNodeData({ mode: val });
+  };
 
   return (
     <div className="bg-zinc-900 border-2 border-[#13005A] rounded-lg p-4 h-full w-full flex flex-col shadow-lg shadow-[#13005A]/20 overflow-hidden">
@@ -55,7 +73,7 @@ export const PromptNode = memo(({ data, selected }: NodeProps) => {
       {/* Mode toggle */}
       <div className="flex gap-1 mb-3 bg-zinc-800 p-1 rounded-lg flex-shrink-0">
         <button
-          onClick={() => setMode("caption")}
+          onClick={() => handleModeChange("caption")}
           className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all ${
             mode === "caption"
               ? "bg-[#13005A] text-white shadow"
@@ -66,7 +84,7 @@ export const PromptNode = memo(({ data, selected }: NodeProps) => {
           Caption
         </button>
         <button
-          onClick={() => setMode("image")}
+          onClick={() => handleModeChange("image")}
           className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-all ${
             mode === "image"
               ? "bg-gradient-to-r from-[#13005A] to-[#1C82AD] text-white shadow"
@@ -81,7 +99,7 @@ export const PromptNode = memo(({ data, selected }: NodeProps) => {
       {/* Prompt textarea */}
       <textarea
         value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
+        onChange={handlePromptChange}
         placeholder={
           mode === "caption"
             ? "Describe the caption you want generated…"

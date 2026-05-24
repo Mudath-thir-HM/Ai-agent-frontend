@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   X, Image, Type, Sparkles, Calendar, ChevronRight, ChevronLeft,
   CheckCircle2, Instagram, Facebook, Twitter, Link2, ImageIcon,
-  Sliders, AlignLeft, Hash, Clock, Eye, Zap,
+  Sliders, AlignLeft, Hash, Clock, Eye, Zap, Loader2, Send,
 } from "lucide-react";
 import ReactFlow, {
   Node, Edge, addEdge, Connection,
@@ -16,6 +16,10 @@ import { PromptNode } from "./canvas-nodes/prompt-node";
 import { OutputNode } from "./canvas-nodes/output-node";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
+import { SchedulePostDialog } from "./SchedulePostDialog";
+import { useGenerateContentMutation } from "../store/apiSlice";
+import { GeneratedContent } from "../types";
+import { toast } from "sonner";
 
 interface CanvasOverlayProps {
   isOpen: boolean;
@@ -216,7 +220,13 @@ function ImageNodePanel({ node }: { node: Node }) {
   );
 }
 
-function PromptNodePanel({ node, edges, nodes }: { node: Node; edges: Edge[]; nodes: Node[] }) {
+function PromptNodePanel({
+  node, edges, nodes, onGenerate, isGenerating,
+}: {
+  node: Node; edges: Edge[]; nodes: Node[];
+  onGenerate: (prompt: string, mode: string, creativity: number) => void;
+  isGenerating: boolean;
+}) {
   const [creativity, setCreativity] = useState(0.7);
   const connectedInputs = useMemo(() => {
     return edges
@@ -278,14 +288,44 @@ function PromptNodePanel({ node, edges, nodes }: { node: Node; edges: Edge[]; no
           <span>Precise</span><span>Balanced</span><span>Wild</span>
         </div>
       </div>
+
+      {/* Generate button */}
+      <button
+        onClick={() => onGenerate(node.data?.prompt ?? "", mode, creativity)}
+        disabled={isGenerating || !node.data?.prompt}
+        className="w-full py-2.5 rounded-lg flex items-center justify-center gap-2 text-xs font-semibold transition-all bg-gradient-to-r from-[#13005A] to-[#1C82AD] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed text-white"
+      >
+        {isGenerating ? (
+          <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating…</>
+        ) : (
+          <><Sparkles className="w-3.5 h-3.5" /> Generate AI Content</>
+        )}
+      </button>
+      {!node.data?.prompt && (
+        <p className="text-[10px] text-zinc-600 text-center">Add a prompt to the node first</p>
+      )}
     </div>
   );
 }
 
-function OutputNodePanel({ node }: { node: Node }) {
+function OutputNodePanel({
+  node, generatedContent, isScheduleOpen, onScheduleOpenChange,
+}: {
+  node: Node;
+  generatedContent: GeneratedContent | null;
+  isScheduleOpen: boolean;
+  onScheduleOpenChange: (open: boolean) => void;
+}) {
   const [platform, setPlatform] = useState<Platform>("instagram");
-  const [caption, setCaption] = useState(MOCK_CAPTION);
+  const [caption, setCaption] = useState(
+    generatedContent?.post_text ?? MOCK_CAPTION
+  );
   const [scheduleTime, setScheduleTime] = useState("");
+
+  // Sync caption when new content is generated
+  useMemo(() => {
+    if (generatedContent?.post_text) setCaption(generatedContent.post_text);
+  }, [generatedContent?.post_text]);
 
   const platforms: { id: Platform; icon: React.FC<{ className?: string }>; label: string }[] = [
     { id: "instagram", icon: Instagram, label: "IG" },
@@ -313,7 +353,10 @@ function OutputNodePanel({ node }: { node: Node }) {
           <Hash className="w-3 h-3" /> Suggested Hashtags
         </Label>
         <div className="flex flex-wrap gap-1">
-          {["#AIMarketing","#ContentCreation","#SocialMediaTips","#GrowthHacking","#DigitalMarketing"].map(tag => (
+          {(generatedContent?.hashtags?.length
+          ? generatedContent.hashtags
+          : ["#AIMarketing","#ContentCreation","#SocialMediaTips","#GrowthHacking","#DigitalMarketing"]
+        ).map(tag => (
             <button
               key={tag}
               onClick={() => setCaption(c => c.includes(tag) ? c : c + " " + tag)}
@@ -398,16 +441,29 @@ function OutputNodePanel({ node }: { node: Node }) {
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <Label className="text-zinc-400 text-[11px]">Schedule Date</Label>
-        <Input type="date" className="bg-zinc-800 border-zinc-700 text-white text-xs h-8" />
-      </div>
+      {generatedContent && (
+        <div className="bg-[#03C988]/10 border border-[#03C988]/30 rounded-lg px-3 py-2">
+          <p className="text-[10px] text-[#03C988] font-medium flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3" /> Content generated — ready to schedule
+          </p>
+        </div>
+      )}
 
-      <button className="w-full py-2 bg-gradient-to-r from-[#13005A] to-[#00337C] hover:opacity-90 rounded-lg text-white text-xs font-medium flex items-center justify-center gap-2 transition-opacity">
+      <button
+        onClick={() => onScheduleOpenChange(true)}
+        className="w-full py-2 bg-gradient-to-r from-[#13005A] to-[#00337C] hover:opacity-90 rounded-lg text-white text-xs font-medium flex items-center justify-center gap-2 transition-opacity"
+      >
         <Calendar className="w-3.5 h-3.5" />
         Schedule to {platform.charAt(0).toUpperCase() + platform.slice(1)}
         {scheduleTime && <span className="text-zinc-400">@ {scheduleTime}</span>}
       </button>
+
+      <SchedulePostDialog
+        open={isScheduleOpen}
+        onOpenChange={onScheduleOpenChange}
+        prefillText={caption}
+        prefillPlatform={platform}
+      />
     </div>
   );
 }
@@ -419,10 +475,31 @@ export function CanvasOverlay({ isOpen, onClose }: CanvasOverlayProps) {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [panelOpen, setPanelOpen] = useState(true);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
+  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+
+  const [generateContent, { isLoading: isGenerating }] = useGenerateContentMutation();
 
   const onConnect = useCallback((params: Connection) => {
     setEdges(eds => addEdge({ ...params, animated: true, style: { stroke: "#1C82AD", strokeWidth: 2 } }, eds));
   }, [setEdges]);
+
+  const handleGenerate = useCallback(async (prompt: string, mode: string, creativity: number) => {
+    if (!prompt.trim()) return;
+    const toneMap = (c: number) => c < 0.35 ? "professional" : c < 0.7 ? "casual" : "humorous";
+    try {
+      const result = await generateContent({
+        platform: "instagram",
+        content_type: mode === "image" ? "carousel" : "post",
+        prompt,
+        tone: toneMap(creativity),
+      }).unwrap();
+      setGeneratedContent(result);
+      toast.success("Content generated! View in the Output node.");
+    } catch (err: any) {
+      toast.error(err?.data?.detail ?? "Generation failed. Please try again.");
+    }
+  }, [generateContent]);
 
   const addNode = (type: string) => {
     const defaults = NODE_DEFAULTS[type] ?? { width: 220, height: 240 };
@@ -559,8 +636,23 @@ export function CanvasOverlay({ isOpen, onClose }: CanvasOverlayProps) {
                     {selectedNode ? (
                       <>
                         {selectedNode.type === "imageNode"  && <ImageNodePanel  node={selectedNode} />}
-                        {selectedNode.type === "promptNode" && <PromptNodePanel node={selectedNode} edges={edges} nodes={nodes} />}
-                        {selectedNode.type === "outputNode" && <OutputNodePanel node={selectedNode} />}
+                        {selectedNode.type === "promptNode" && (
+                          <PromptNodePanel
+                            node={selectedNode}
+                            edges={edges}
+                            nodes={nodes}
+                            onGenerate={handleGenerate}
+                            isGenerating={isGenerating}
+                          />
+                        )}
+                        {selectedNode.type === "outputNode" && (
+                          <OutputNodePanel
+                            node={selectedNode}
+                            generatedContent={generatedContent}
+                            isScheduleOpen={isScheduleOpen}
+                            onScheduleOpenChange={setIsScheduleOpen}
+                          />
+                        )}
                       </>
                     ) : (
                       <div className="h-full flex flex-col items-center justify-center text-center gap-3 py-10">

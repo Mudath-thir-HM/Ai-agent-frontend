@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { Badge } from "../../components/ui/badge";
@@ -22,123 +22,89 @@ import {
   Sparkles,
   Copy,
   Send,
-  Eye
+  Eye,
+  Loader2,
+  MessageCircle
 } from "lucide-react";
 import { motion } from "motion/react";
-
-interface GeneratedContent {
-  id: number;
-  type: "image" | "carousel" | "video";
-  caption: string;
-  imageUrl?: string;
-  platform: "instagram" | "facebook" | "twitter" | "all";
-  status: "draft" | "scheduled" | "posted";
-  scheduledDate?: string;
-  generatedAt: string;
-  engagement?: {
-    likes: number;
-    comments: number;
-    shares: number;
-  };
-}
-
-const mockContent: GeneratedContent[] = [
-  {
-    id: 1,
-    type: "image",
-    caption: "Transform your social media presence with AI-powered content creation. 🚀✨ #SocialMedia #AI #Marketing",
-    imageUrl: "gradient-1",
-    platform: "all",
-    status: "draft",
-    generatedAt: "2 hours ago",
-  },
-  {
-    id: 2,
-    type: "carousel",
-    caption: "5 tips to boost your engagement this week! Swipe to learn more 👉 #MarketingTips #SocialMediaStrategy",
-    imageUrl: "gradient-2",
-    platform: "instagram",
-    status: "scheduled",
-    scheduledDate: "2026-05-24 10:00 AM",
-    generatedAt: "5 hours ago",
-  },
-  {
-    id: 3,
-    type: "image",
-    caption: "Behind the scenes: How we create content that converts 💡 #ContentCreation #BehindTheScenes",
-    imageUrl: "gradient-3",
-    platform: "facebook",
-    status: "posted",
-    scheduledDate: "2026-05-22 2:00 PM",
-    generatedAt: "1 day ago",
-    engagement: {
-      likes: 342,
-      comments: 28,
-      shares: 15,
-    },
-  },
-  {
-    id: 4,
-    type: "image",
-    caption: "New feature alert! 🎉 Check out what we've been working on. Link in bio! #ProductLaunch #Innovation",
-    imageUrl: "gradient-4",
-    platform: "twitter",
-    status: "draft",
-    generatedAt: "3 hours ago",
-  },
-  {
-    id: 5,
-    type: "image",
-    caption: "Monday motivation: Your only limit is you 💪✨ #MondayMotivation #Inspiration",
-    imageUrl: "gradient-5",
-    platform: "all",
-    status: "scheduled",
-    scheduledDate: "2026-05-26 9:00 AM",
-    generatedAt: "1 day ago",
-  },
-];
+import { useGetGeneratedContentQuery, useSchedulePostMutation } from "../../store/apiSlice";
+import { useAppDispatch } from "../../store/hooks";
+import { setCanvasOpen } from "../../store/uiSlice";
+import { format, addDays } from "date-fns";
+import { GeneratedContent } from "../../types";
+import { toast } from "sonner";
+import { ContentDetailDialog } from "../../components/ContentDetailDialog";
+import { EditContentDialog } from "../../components/EditContentDialog";
 
 const platformIcons = {
   instagram: Instagram,
   facebook: Facebook,
-  twitter: Twitter,
+  x: Twitter,
+  linkedin: MessageCircle,
+  tiktok: MessageCircle,
   all: Sparkles,
 };
 
-const gradients = [
-  "from-[#13005A] to-[#00337C]",
-  "from-[#00337C] to-[#1C82AD]",
-  "from-[#1C82AD] to-[#03C988]",
-  "from-[#13005A] to-[#03C988]",
-  "from-[#00337C] to-[#03C988]",
-];
-
 export function GeneratedContentView() {
+  const dispatch = useAppDispatch();
   const [selectedContent, setSelectedContent] = useState<GeneratedContent | null>(null);
+  const [detailContent, setDetailContent] = useState<GeneratedContent | null>(null);
+  const [editContent, setEditContent] = useState<GeneratedContent | null>(null);
   const [filter, setFilter] = useState<"all" | "draft" | "scheduled" | "posted">("all");
   const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [scheduleDate, setScheduleDate] = useState("");
   const [scheduleTime, setScheduleTime] = useState("");
+  const [scheduleCaption, setScheduleCaption] = useState("");
   const [selectedPlatform, setSelectedPlatform] = useState("instagram");
 
-  const filteredContent = mockContent.filter((content) => {
+  const { data: contentList = [], isLoading } = useGetGeneratedContentQuery();
+  const [schedulePost, { isLoading: isScheduling }] = useSchedulePostMutation();
+
+  const filteredContent = contentList.filter((content) => {
     if (filter === "all") return true;
     return content.status === filter;
   });
 
-  const handleSchedulePost = () => {
-    console.log("Scheduling post:", selectedContent?.id, scheduleDate, scheduleTime, selectedPlatform);
-    setIsScheduleDialogOpen(false);
+  const handleSchedulePost = async () => {
+    if (!selectedContent || !scheduleDate || !scheduleTime) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    const scheduled_for = new Date(`${scheduleDate}T${scheduleTime}:00`).toISOString();
+
+    try {
+      await schedulePost({
+        platform: selectedPlatform as any,
+        post_text: scheduleCaption || selectedContent.post_text,
+        scheduled_for,
+      }).unwrap();
+
+      toast.success("Post scheduled successfully! 🎉");
+      setIsScheduleDialogOpen(false);
+      // Reset form
+      setScheduleDate("");
+      setScheduleTime("");
+      setScheduleCaption("");
+      setSelectedContent(null);
+    } catch (err: any) {
+      toast.error(err?.data?.detail ?? "Failed to schedule post. Please try again.");
+    }
   };
 
   return (
     <div className="p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Generated Content</h1>
-          <p className="text-zinc-400">Manage your AI-generated posts and media</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Generated Content</h1>
+          <p className="text-muted-foreground">Manage your AI-generated posts and media</p>
         </div>
-        <Button className="bg-gradient-to-r from-[#13005A] to-[#00337C] hover:opacity-90">
+        <Button 
+          onClick={() => dispatch(setCanvasOpen(true))}
+          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+        >
           <Sparkles className="w-4 h-4 mr-2" />
           Generate New
         </Button>
@@ -146,227 +112,279 @@ export function GeneratedContentView() {
 
       {/* Filter Tabs */}
       <Tabs defaultValue="all" value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
-        <TabsList className="bg-zinc-900 border border-zinc-800">
-          <TabsTrigger value="all" className="data-[state=active]:bg-[#13005A]/20 data-[state=active]:text-[#03C988]">
-            All Content ({mockContent.length})
+        <TabsList className="bg-muted border border-border">
+          <TabsTrigger value="all" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+            All Content ({contentList.length})
           </TabsTrigger>
-          <TabsTrigger value="draft" className="data-[state=active]:bg-[#13005A]/20 data-[state=active]:text-[#03C988]">
-            Drafts ({mockContent.filter(c => c.status === "draft").length})
+          <TabsTrigger value="draft" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+            Drafts ({contentList.filter(c => c.status === "draft").length})
           </TabsTrigger>
-          <TabsTrigger value="scheduled" className="data-[state=active]:bg-[#13005A]/20 data-[state=active]:text-[#03C988]">
-            Scheduled ({mockContent.filter(c => c.status === "scheduled").length})
+          <TabsTrigger value="scheduled" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+            Scheduled ({contentList.filter(c => c.status === "scheduled").length})
           </TabsTrigger>
-          <TabsTrigger value="posted" className="data-[state=active]:bg-[#13005A]/20 data-[state=active]:text-[#03C988]">
-            Posted ({mockContent.filter(c => c.status === "posted").length})
+          <TabsTrigger value="posted" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+            Posted ({contentList.filter(c => c.status === "posted").length})
           </TabsTrigger>
         </TabsList>
       </Tabs>
 
       {/* Content Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredContent.map((content, index) => {
-          const PlatformIcon = platformIcons[content.platform];
-          const gradient = gradients[index % gradients.length];
+      {isLoading ? (
+        <div className="flex justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredContent.map((content, index) => {
+            const PlatformIcon = platformIcons[content.target_platform as keyof typeof platformIcons] || Sparkles;
 
-          return (
-            <motion.div
-              key={content.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Card className="border-zinc-800 bg-zinc-900/50 backdrop-blur overflow-hidden group hover:border-[#1C82AD] transition-colors">
-                {/* Image Preview */}
-                <div className={`relative aspect-square bg-gradient-to-br ${gradient} flex items-center justify-center`}>
-                  <ImageIcon className="w-16 h-16 text-white/30" />
+            return (
+              <motion.div
+                key={content.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <Card className="border-border bg-card/50 backdrop-blur overflow-hidden group hover:border-primary/50 transition-colors shadow-sm">
+                  {/* Image Preview */}
+                  <div className={`relative aspect-square bg-muted flex items-center justify-center overflow-hidden`}>
+                    {content.media_urls && content.media_urls.length > 0 ? (
+                      <img src={content.media_urls[0]} alt="Content preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center p-6 text-center h-full w-full bg-gradient-to-br from-primary/10 to-accent/10">
+                         <p className="text-sm text-foreground line-clamp-6">{content.post_text}</p>
+                      </div>
+                    )}
 
-                  {/* Status Badge */}
-                  <div className="absolute top-3 left-3">
-                    <Badge className={
-                      content.status === "draft"
-                        ? "bg-zinc-700 text-white"
-                        : content.status === "scheduled"
-                        ? "bg-[#00337C] text-white"
-                        : "bg-[#03C988] text-white"
-                    }>
-                      {content.status}
-                    </Badge>
-                  </div>
+                    {/* Status Badge */}
+                    <div className="absolute top-3 left-3">
+                      <Badge className={
+                        content.status === "draft"
+                          ? "bg-muted-foreground text-background"
+                          : content.status === "scheduled"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-accent text-accent-foreground"
+                      }>
+                        {content.status}
+                      </Badge>
+                    </div>
 
-                  {/* Platform Badge */}
-                  <div className="absolute top-3 right-3">
-                    <div className="w-8 h-8 rounded-full bg-black/30 backdrop-blur flex items-center justify-center">
-                      <PlatformIcon className="w-4 h-4 text-white" />
+                    {/* Platform Badge */}
+                    <div className="absolute top-3 right-3">
+                      <div className="w-8 h-8 rounded-full bg-background/80 backdrop-blur flex items-center justify-center shadow-sm">
+                        <PlatformIcon className="w-4 h-4 text-foreground" />
+                      </div>
+                    </div>
+
+                    {/* Hover Actions */}
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="text-white hover:bg-white/20"
+                        onClick={() => {
+                          setDetailContent(content);
+                          setIsDetailDialogOpen(true);
+                        }}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="text-white hover:bg-white/20"
+                        onClick={() => {
+                          setEditContent(content);
+                          setIsEditDialogOpen(true);
+                        }}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      {content.media_urls && content.media_urls.length > 0 && (
+                        <Button size="sm" variant="ghost" className="text-white hover:bg-white/20">
+                          <Download className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
 
-                  {/* Hover Actions */}
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    <Button size="sm" variant="ghost" className="text-white hover:bg-white/20">
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost" className="text-white hover:bg-white/20">
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost" className="text-white hover:bg-white/20">
-                      <Download className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
+                  <CardContent className="p-4 space-y-3">
+                    {/* Caption */}
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {content.post_text}
+                    </p>
 
-                <CardContent className="p-4 space-y-3">
-                  {/* Caption */}
-                  <p className="text-sm text-zinc-300 line-clamp-2">
-                    {content.caption}
-                  </p>
-
-                  {/* Meta Info */}
-                  <div className="flex items-center gap-2 text-xs text-zinc-500">
-                    <Clock className="w-3 h-3" />
-                    <span>{content.generatedAt}</span>
-                  </div>
-
-                  {/* Scheduled Date */}
-                  {content.scheduledDate && (
-                    <div className="flex items-center gap-2 text-xs text-[#1C82AD]">
-                      <Calendar className="w-3 h-3" />
-                      <span>{content.scheduledDate}</span>
+                    {/* Meta Info */}
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-3 h-3" />
+                        <span>{format(new Date(content.created_at), "MMM d, h:mm a")}</span>
+                      </div>
+                      <Badge variant="outline" className="text-[10px] capitalize">
+                        {content.content_type}
+                      </Badge>
                     </div>
-                  )}
 
-                  {/* Engagement Stats */}
-                  {content.engagement && (
-                    <div className="flex items-center gap-4 text-xs text-zinc-500 pt-2 border-t border-zinc-800">
-                      <span>❤️ {content.engagement.likes}</span>
-                      <span>💬 {content.engagement.comments}</span>
-                      <span>🔄 {content.engagement.shares}</span>
-                    </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex gap-2 pt-2">
-                    {content.status === "draft" && (
-                      <>
-                        <Dialog open={isScheduleDialogOpen && selectedContent?.id === content.id} onOpenChange={setIsScheduleDialogOpen}>
-                          <DialogTrigger asChild>
-                            <Button
-                              size="sm"
-                              className="flex-1 bg-[#00337C] hover:bg-[#00337C]/80"
-                              onClick={() => setSelectedContent(content)}
-                            >
-                              <Calendar className="w-3 h-3 mr-1" />
-                              Schedule
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="bg-zinc-900 border-zinc-800">
-                            <DialogHeader>
-                              <DialogTitle className="text-white">Schedule Post</DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-4 py-4">
-                              <div className="space-y-2">
-                                <Label className="text-white">Platform</Label>
-                                <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
-                                  <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="instagram">Instagram</SelectItem>
-                                    <SelectItem value="facebook">Facebook</SelectItem>
-                                    <SelectItem value="twitter">X (Twitter)</SelectItem>
-                                    <SelectItem value="all">All Platforms</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-
-                              <div className="space-y-2">
-                                <Label className="text-white">Date</Label>
-                                <Input
-                                  type="date"
-                                  value={scheduleDate}
-                                  onChange={(e) => setScheduleDate(e.target.value)}
-                                  className="bg-zinc-800 border-zinc-700 text-white"
-                                />
-                              </div>
-
-                              <div className="space-y-2">
-                                <Label className="text-white">Time</Label>
-                                <Input
-                                  type="time"
-                                  value={scheduleTime}
-                                  onChange={(e) => setScheduleTime(e.target.value)}
-                                  className="bg-zinc-800 border-zinc-700 text-white"
-                                />
-                              </div>
-
-                              <div className="space-y-2">
-                                <Label className="text-white">Caption</Label>
-                                <Textarea
-                                  defaultValue={content.caption}
-                                  className="min-h-[100px] bg-zinc-800 border-zinc-700 text-white resize-none"
-                                />
-                              </div>
-
+                    {/* Actions */}
+                    <div className="flex gap-2 pt-2 border-t border-border mt-2">
+                      {content.status === "draft" && (
+                        <>
+                          <Dialog open={isScheduleDialogOpen && selectedContent?.id === content.id} onOpenChange={(open) => {
+                            setIsScheduleDialogOpen(open);
+                            if (open) {
+                              setSelectedContent(content);
+                              setScheduleCaption(content.post_text);
+                              setSelectedPlatform(content.target_platform || "instagram");
+                              setScheduleDate(format(addDays(new Date(), 1), "yyyy-MM-dd"));
+                              setScheduleTime("09:00");
+                            }
+                          }}>
+                            <DialogTrigger asChild>
                               <Button
-                                onClick={handleSchedulePost}
-                                className="w-full bg-gradient-to-r from-[#13005A] to-[#00337C] hover:opacity-90"
+                                size="sm"
+                                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
                               >
-                                <Send className="w-4 h-4 mr-2" />
-                                Schedule Post
+                                <Calendar className="w-3 h-3 mr-1" />
+                                Schedule
                               </Button>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
+                            </DialogTrigger>
+                            <DialogContent className="bg-card border-border">
+                              <DialogHeader>
+                                <DialogTitle className="text-foreground">Schedule Post</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                  <Label className="text-foreground">Platform</Label>
+                                  <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
+                                    <SelectTrigger className="bg-input border-border text-foreground">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="instagram">Instagram</SelectItem>
+                                      <SelectItem value="facebook">Facebook</SelectItem>
+                                      <SelectItem value="twitter">X (Twitter)</SelectItem>
+                                      <SelectItem value="all">All Platforms</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
 
-                        <Button size="sm" variant="outline" className="border-zinc-700 text-white hover:bg-zinc-800">
-                          <Edit2 className="w-3 h-3" />
-                        </Button>
-                      </>
-                    )}
+                                <div className="space-y-2">
+                                  <Label className="text-foreground">Date</Label>
+                                  <Input
+                                    type="date"
+                                    value={scheduleDate}
+                                    onChange={(e) => setScheduleDate(e.target.value)}
+                                    className="bg-input border-border text-foreground [color-scheme:dark]"
+                                  />
+                                </div>
 
-                    {content.status === "scheduled" && (
-                      <>
-                        <Button size="sm" className="flex-1 bg-[#03C988] hover:bg-[#03C988]/80">
-                          <Eye className="w-3 h-3 mr-1" />
-                          View
-                        </Button>
-                        <Button size="sm" variant="outline" className="border-zinc-700 text-white hover:bg-zinc-800">
-                          <Edit2 className="w-3 h-3" />
-                        </Button>
-                      </>
-                    )}
+                                <div className="space-y-2">
+                                  <Label className="text-foreground">Time</Label>
+                                  <Input
+                                    type="time"
+                                    value={scheduleTime}
+                                    onChange={(e) => setScheduleTime(e.target.value)}
+                                    className="bg-input border-border text-foreground [color-scheme:dark]"
+                                  />
+                                </div>
 
-                    {content.status === "posted" && (
-                      <>
-                        <Button size="sm" className="flex-1 bg-zinc-800 hover:bg-zinc-700">
-                          <Copy className="w-3 h-3 mr-1" />
-                          Duplicate
-                        </Button>
-                        <Button size="sm" variant="outline" className="border-zinc-700 text-white hover:bg-zinc-800">
-                          <MoreVertical className="w-3 h-3" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          );
-        })}
-      </div>
+                                <div className="space-y-2">
+                                  <Label className="text-foreground">Caption</Label>
+                                  <Textarea
+                                    value={scheduleCaption}
+                                    onChange={(e) => setScheduleCaption(e.target.value)}
+                                    placeholder="Edit caption or leave empty to use original"
+                                    className="min-h-[100px] bg-input border-border text-foreground resize-none"
+                                  />
+                                </div>
 
-      {filteredContent.length === 0 && (
+                                <Button
+                                  onClick={handleSchedulePost}
+                                  disabled={isScheduling}
+                                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50"
+                                >
+                                  {isScheduling ? (
+                                    <>
+                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                      Scheduling...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Send className="w-4 h-4 mr-2" />
+                                      Schedule Post
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+
+                          <Button size="sm" variant="outline" className="border-border text-foreground hover:bg-muted">
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        </>
+                      )}
+
+                      {content.status === "scheduled" && (
+                        <>
+                          <Button size="sm" className="flex-1 bg-accent hover:bg-accent/80 text-accent-foreground">
+                            <Eye className="w-3 h-3 mr-1" />
+                            View
+                          </Button>
+                          <Button size="sm" variant="outline" className="border-border text-foreground hover:bg-muted">
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        </>
+                      )}
+
+                      {content.status === "posted" && (
+                        <>
+                          <Button size="sm" className="flex-1 bg-muted hover:bg-muted/80 text-foreground border border-border">
+                            <Copy className="w-3 h-3 mr-1" />
+                            Duplicate
+                          </Button>
+                          <Button size="sm" variant="outline" className="border-border text-foreground hover:bg-muted">
+                            <MoreVertical className="w-3 h-3" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+
+      {!isLoading && filteredContent.length === 0 && (
         <div className="text-center py-20">
-          <ImageIcon className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">No content found</h3>
-          <p className="text-sm text-zinc-500 mb-4">
+          <ImageIcon className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">No content found</h3>
+          <p className="text-sm text-muted-foreground mb-4">
             Generate your first AI-powered post to get started
           </p>
-          <Button className="bg-gradient-to-r from-[#13005A] to-[#00337C] hover:opacity-90">
+          <Button 
+            onClick={() => dispatch(setCanvasOpen(true))}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
             <Sparkles className="w-4 h-4 mr-2" />
             Generate Content
           </Button>
         </div>
       )}
+
+      {/* Dialog Components */}
+      <ContentDetailDialog 
+        open={isDetailDialogOpen} 
+        onOpenChange={setIsDetailDialogOpen} 
+        content={detailContent} 
+      />
+      <EditContentDialog 
+        open={isEditDialogOpen} 
+        onOpenChange={setIsEditDialogOpen} 
+        content={editContent} 
+      />
     </div>
   );
 }

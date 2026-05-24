@@ -1,124 +1,89 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../components/ui/tabs";
 import { Avatar, AvatarFallback } from "../../components/ui/avatar";
 import { Badge } from "../../components/ui/badge";
 import { Textarea } from "../../components/ui/textarea";
-import { Facebook, Instagram, Twitter, Send, Heart, MessageCircle, MoreVertical, CheckCheck } from "lucide-react";
+import {
+  Facebook,
+  Instagram,
+  Twitter,
+  Send,
+  Heart,
+  MessageCircle,
+  MoreVertical,
+  CheckCheck,
+  Loader2,
+} from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-
-interface Message {
-  id: number;
-  platform: "instagram" | "facebook" | "twitter";
-  type: "comment" | "dm";
-  author: string;
-  avatar: string;
-  content: string;
-  postContext?: string;
-  timestamp: string;
-  isRead: boolean;
-  hasReplied?: boolean;
-}
-
-const mockMessages: Message[] = [
-  {
-    id: 1,
-    platform: "instagram",
-    type: "comment",
-    author: "sarah_designs",
-    avatar: "SD",
-    content: "This is absolutely amazing! Where can I learn more about this?",
-    postContext: "Product Launch Announcement",
-    timestamp: "2 hours ago",
-    isRead: false,
-  },
-  {
-    id: 2,
-    platform: "facebook",
-    type: "dm",
-    author: "Mike Johnson",
-    avatar: "MJ",
-    content: "Hey! I'm interested in collaborating on a project. Do you have time for a quick call?",
-    timestamp: "3 hours ago",
-    isRead: false,
-  },
-  {
-    id: 3,
-    platform: "twitter",
-    type: "comment",
-    author: "@techguru_alex",
-    avatar: "TA",
-    content: "Game changer! How long did it take you to build this?",
-    postContext: "Behind the Scenes Update",
-    timestamp: "5 hours ago",
-    isRead: true,
-    hasReplied: true,
-  },
-  {
-    id: 4,
-    platform: "instagram",
-    type: "dm",
-    author: "emma_creates",
-    avatar: "EC",
-    content: "Love your content! Would you be interested in a partnership?",
-    timestamp: "1 day ago",
-    isRead: true,
-  },
-  {
-    id: 5,
-    platform: "facebook",
-    type: "comment",
-    author: "David Chen",
-    avatar: "DC",
-    content: "This is exactly what I was looking for! Thank you for sharing!",
-    postContext: "Tutorial Video",
-    timestamp: "1 day ago",
-    isRead: true,
-  },
-  {
-    id: 6,
-    platform: "twitter",
-    type: "dm",
-    author: "@marketingpro",
-    avatar: "MP",
-    content: "Impressive work! Are you available for freelance projects?",
-    timestamp: "2 days ago",
-    isRead: true,
-    hasReplied: true,
-  },
-];
+import {
+  useGetMessagesQuery,
+  useReplyToMessageMutation,
+} from "../../store/apiSlice";
+import { Message } from "../../types";
+import { toast } from "sonner";
+import { format } from "date-fns";
 
 const platformIcons = {
   instagram: Instagram,
   facebook: Facebook,
-  twitter: Twitter,
+  x: Twitter,
+  linkedin: MessageCircle,
+  tiktok: MessageCircle,
 };
 
 const platformColors = {
-  instagram: "from-[#13005A] to-[#1C82AD]",
-  facebook: "from-[#00337C] to-[#1C82AD]",
-  twitter: "from-zinc-800 to-zinc-700",
+  instagram: "text-pink-600 bg-pink-100",
+  facebook: "text-blue-600 bg-blue-100",
+  x: "text-zinc-900 bg-zinc-200 dark:text-zinc-100 dark:bg-zinc-800",
+  linkedin: "text-blue-700 bg-blue-100",
+  tiktok: "text-black bg-gray-200 dark:text-white dark:bg-zinc-800",
 };
 
 export function MessagesView() {
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [replyText, setReplyText] = useState("");
-  const [filter, setFilter] = useState<"all" | "unread" | "comments" | "dms">("all");
+  const [filter, setFilter] = useState<"all" | "unread" | "comments" | "dms">(
+    "all",
+  );
 
-  const filteredMessages = mockMessages.filter((msg) => {
-    if (filter === "unread") return !msg.isRead;
+  const { data: messages = [], isLoading } = useGetMessagesQuery();
+  const [replyToMessage, { isLoading: isReplying }] =
+    useReplyToMessageMutation();
+
+  const filteredMessages = messages.filter((msg) => {
+    if (filter === "unread") return !msg.is_replied;
     if (filter === "comments") return msg.type === "comment";
     if (filter === "dms") return msg.type === "dm";
     return true;
   });
 
-  const unreadCount = mockMessages.filter((m) => !m.isRead).length;
+  const unreadCount = messages.filter((m) => !m.is_replied).length;
 
-  const handleSendReply = () => {
+  const handleSendReply = async () => {
     if (replyText.trim() && selectedMessage) {
-      console.log("Sending reply:", replyText, "to", selectedMessage.author);
-      setReplyText("");
+      try {
+        await replyToMessage({
+          messageId: selectedMessage.id.toString(),
+          reply_text: replyText,
+        }).unwrap();
+        toast.success("Reply sent successfully");
+        setReplyText("");
+        // Deselect or keep selected, it's up to UX. We'll keep it selected to show the reply if the backend returns it
+      } catch (err: any) {
+        toast.error(err.data?.detail || "Failed to send reply");
+      }
     }
   };
 
@@ -126,29 +91,49 @@ export function MessagesView() {
     <div className="p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Messages & Comments</h1>
-          <p className="text-zinc-400">Manage all your social interactions in one place</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            Messages & Comments
+          </h1>
+          <p className="text-muted-foreground">
+            Manage all your social interactions in one place
+          </p>
         </div>
         {unreadCount > 0 && (
-          <Badge className="bg-[#00337C] text-white px-3 py-1">
+          <Badge className="bg-primary text-primary-foreground px-3 py-1">
             {unreadCount} unread
           </Badge>
         )}
       </div>
 
       {/* Filter Tabs */}
-      <Tabs defaultValue="all" value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
-        <TabsList className="bg-zinc-900 border border-zinc-800">
-          <TabsTrigger value="all" className="data-[state=active]:bg-[#13005A]/20 data-[state=active]:text-[#03C988]">
+      <Tabs
+        defaultValue="all"
+        value={filter}
+        onValueChange={(v) => setFilter(v as typeof filter)}
+      >
+        <TabsList className="bg-muted border border-border">
+          <TabsTrigger
+            value="all"
+            className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+          >
             All Messages
           </TabsTrigger>
-          <TabsTrigger value="unread" className="data-[state=active]:bg-[#13005A]/20 data-[state=active]:text-[#03C988]">
+          <TabsTrigger
+            value="unread"
+            className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+          >
             Unread ({unreadCount})
           </TabsTrigger>
-          <TabsTrigger value="comments" className="data-[state=active]:bg-[#13005A]/20 data-[state=active]:text-[#03C988]">
+          <TabsTrigger
+            value="comments"
+            className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+          >
             Comments
           </TabsTrigger>
-          <TabsTrigger value="dms" className="data-[state=active]:bg-[#13005A]/20 data-[state=active]:text-[#03C988]">
+          <TabsTrigger
+            value="dms"
+            className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+          >
             Direct Messages
           </TabsTrigger>
         </TabsList>
@@ -156,81 +141,104 @@ export function MessagesView() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Messages List */}
-        <Card className="border-zinc-800 bg-zinc-900/50 backdrop-blur">
+        <Card className="border-border bg-card/50 backdrop-blur shadow-sm">
           <CardHeader>
-            <CardTitle className="text-white">Inbox</CardTitle>
+            <CardTitle className="text-foreground">Inbox</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="max-h-[600px] overflow-y-auto space-y-2 pr-2">
-              <AnimatePresence mode="popLayout">
-                {filteredMessages.map((message) => {
-                  const Icon = platformIcons[message.platform];
-                  const isSelected = selectedMessage?.id === message.id;
+              {isLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <AnimatePresence mode="popLayout">
+                  {filteredMessages.map((message) => {
+                    const Icon =
+                      platformIcons[
+                        message.platform as keyof typeof platformIcons
+                      ] || MessageCircle;
+                    const isSelected = selectedMessage?.id === message.id;
 
-                  return (
-                    <motion.button
-                      key={message.id}
-                      layout
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      onClick={() => setSelectedMessage(message)}
-                      className={`w-full p-4 rounded-lg border transition-all text-left ${
-                        isSelected
-                          ? "border-[#1C82AD] bg-[#1C82AD]/10"
-                          : message.isRead
-                          ? "border-zinc-800 bg-zinc-800/30 hover:bg-zinc-800/50"
-                          : "border-[#1C82AD]/30 bg-[#1C82AD]/5 hover:bg-[#1C82AD]/10"
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <Avatar className="w-10 h-10 flex-shrink-0">
-                          <AvatarFallback className={`bg-gradient-to-br ${platformColors[message.platform]} text-white text-sm`}>
-                            {message.avatar}
-                          </AvatarFallback>
-                        </Avatar>
+                    return (
+                      <motion.button
+                        key={message.id}
+                        layout
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        onClick={() => setSelectedMessage(message)}
+                        className={`w-full p-4 rounded-lg border transition-all text-left ${
+                          isSelected
+                            ? "border-primary bg-primary/10"
+                            : message.is_replied
+                              ? "border-border bg-muted/30 hover:bg-muted/50"
+                              : "border-primary/30 bg-primary/5 hover:bg-primary/10"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <Avatar className="w-10 h-10 flex-shrink-0">
+                            <AvatarFallback
+                              className={`${platformColors[message.platform as keyof typeof platformColors] || "bg-muted"} text-sm`}
+                            >
+                              {message.author_name
+                                .substring(0, 2)
+                                .toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
 
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-white truncate">{message.author}</span>
-                            <Icon className="w-3 h-3 text-zinc-500 flex-shrink-0" />
-                            {message.type === "dm" ? (
-                              <MessageCircle className="w-3 h-3 text-zinc-500 flex-shrink-0" />
-                            ) : (
-                              <MessageCircle className="w-3 h-3 text-zinc-500 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium text-foreground truncate">
+                                {message.author_name}
+                              </span>
+                              <Icon className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                              {message.type === "dm" ? (
+                                <MessageCircle className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                              ) : (
+                                <MessageCircle className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                              )}
+                            </div>
+
+                            {message.post_id && (
+                              <p className="text-xs text-primary mb-1">
+                                on Post {message.post_id}
+                              </p>
                             )}
+
+                            <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                              {message.content}
+                            </p>
+
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(message.created_at), "PPp")}
+                              </span>
+                              {message.is_replied && (
+                                <div className="flex items-center gap-1 text-accent">
+                                  <CheckCheck className="w-3 h-3" />
+                                  <span className="text-xs">Replied</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
 
-                          {message.postContext && (
-                            <p className="text-xs text-[#1C82AD] mb-1">on "{message.postContext}"</p>
+                          {!message.is_replied && (
+                            <div className="w-2 h-2 rounded-full bg-accent flex-shrink-0 mt-1" />
                           )}
-
-                          <p className="text-sm text-zinc-400 line-clamp-2 mb-2">{message.content}</p>
-
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-zinc-600">{message.timestamp}</span>
-                            {message.hasReplied && (
-                              <div className="flex items-center gap-1 text-green-500">
-                                <CheckCheck className="w-3 h-3" />
-                                <span className="text-xs">Replied</span>
-                              </div>
-                            )}
-                          </div>
                         </div>
+                      </motion.button>
+                    );
+                  })}
+                </AnimatePresence>
+              )}
 
-                        {!message.isRead && (
-                          <div className="w-2 h-2 rounded-full bg-[#03C988] flex-shrink-0 mt-1" />
-                        )}
-                      </div>
-                    </motion.button>
-                  );
-                })}
-              </AnimatePresence>
-
-              {filteredMessages.length === 0 && (
+              {!isLoading && filteredMessages.length === 0 && (
                 <div className="text-center py-12">
-                  <MessageCircle className="w-12 h-12 text-zinc-700 mx-auto mb-3" />
-                  <p className="text-zinc-500">No messages to display</p>
+                  <MessageCircle className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">
+                    No messages to display
+                  </p>
                 </div>
               )}
             </div>
@@ -238,9 +246,9 @@ export function MessagesView() {
         </Card>
 
         {/* Message Detail & Reply */}
-        <Card className="border-zinc-800 bg-zinc-900/50 backdrop-blur">
-          <CardHeader className="border-b border-zinc-800">
-            <CardTitle className="text-white">
+        <Card className="border-border bg-card/50 backdrop-blur shadow-sm">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-foreground">
               {selectedMessage ? "Reply" : "Select a message"}
             </CardTitle>
           </CardHeader>
@@ -251,52 +259,76 @@ export function MessagesView() {
                 <div className="space-y-4">
                   <div className="flex items-start gap-4">
                     <Avatar className="w-12 h-12">
-                      <AvatarFallback className={`bg-gradient-to-br ${platformColors[selectedMessage.platform]} text-white`}>
-                        {selectedMessage.avatar}
+                      <AvatarFallback
+                        className={`${platformColors[selectedMessage.platform as keyof typeof platformColors] || "bg-muted"}`}
+                      >
+                        {selectedMessage.author_name
+                          .substring(0, 2)
+                          .toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-white">{selectedMessage.author}</h3>
+                        <h3 className="font-semibold text-foreground">
+                          {selectedMessage.author_name}
+                        </h3>
                         {(() => {
-                          const Icon = platformIcons[selectedMessage.platform];
-                          return <Icon className="w-4 h-4 text-zinc-500" />;
+                          const Icon =
+                            platformIcons[
+                              selectedMessage.platform as keyof typeof platformIcons
+                            ] || MessageCircle;
+                          return (
+                            <Icon className="w-4 h-4 text-muted-foreground" />
+                          );
                         })()}
                       </div>
-                      {selectedMessage.postContext && (
-                        <p className="text-sm text-[#1C82AD] mb-2">
-                          {selectedMessage.type === "comment" ? "Commented" : "Messaged you"} • {selectedMessage.timestamp}
+                      {selectedMessage.post_id && (
+                        <p className="text-sm text-primary mb-2">
+                          {selectedMessage.type === "comment"
+                            ? "Commented"
+                            : "Messaged you"}{" "}
+                          •{" "}
+                          {format(new Date(selectedMessage.created_at), "PPp")}
                         </p>
                       )}
-                      {!selectedMessage.postContext && (
-                        <p className="text-sm text-zinc-500 mb-2">{selectedMessage.timestamp}</p>
+                      {!selectedMessage.post_id && (
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {format(new Date(selectedMessage.created_at), "PPp")}
+                        </p>
                       )}
                     </div>
-                    <Button variant="ghost" size="icon" className="text-zinc-500 hover:text-white">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:text-foreground"
+                    >
                       <MoreVertical className="w-4 h-4" />
                     </Button>
                   </div>
 
-                  {selectedMessage.postContext && (
-                    <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-3">
-                      <p className="text-xs text-zinc-500 mb-1">Context</p>
-                      <p className="text-sm text-white">{selectedMessage.postContext}</p>
+                  {selectedMessage.post_id && (
+                    <div className="bg-muted/50 border border-border rounded-lg p-3">
+                      <p className="text-xs text-muted-foreground mb-1">
+                        Context
+                      </p>
+                      <p className="text-sm text-foreground">
+                        Post ID: {selectedMessage.post_id}
+                      </p>
                     </div>
                   )}
 
-                  <div className="bg-zinc-800/30 rounded-lg p-4 border border-zinc-800">
-                    <p className="text-white">{selectedMessage.content}</p>
+                  <div className="bg-muted/30 rounded-lg p-4 border border-border">
+                    <p className="text-foreground">{selectedMessage.content}</p>
                   </div>
 
-                  {selectedMessage.hasReplied && (
-                    <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                  {selectedMessage.is_replied && (
+                    <div className="bg-accent/10 border border-accent/20 rounded-lg p-4">
                       <div className="flex items-center gap-2 mb-2">
-                        <CheckCheck className="w-4 h-4 text-green-500" />
-                        <span className="text-sm font-medium text-green-500">You replied</span>
+                        <CheckCheck className="w-4 h-4 text-accent" />
+                        <span className="text-sm font-medium text-accent">
+                          You replied
+                        </span>
                       </div>
-                      <p className="text-sm text-zinc-400">
-                        "Thanks so much! It took about 3 months of focused work. Really appreciate your support!"
-                      </p>
                     </div>
                   )}
                 </div>
@@ -306,7 +338,7 @@ export function MessagesView() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-zinc-400 hover:text-white hover:bg-zinc-800"
+                    className="text-muted-foreground hover:text-foreground hover:bg-muted"
                   >
                     <Heart className="w-4 h-4 mr-2" />
                     Like
@@ -314,53 +346,66 @@ export function MessagesView() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-zinc-400 hover:text-white hover:bg-zinc-800"
+                    className="text-muted-foreground hover:text-foreground hover:bg-muted"
                   >
                     Archive
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-zinc-400 hover:text-white hover:bg-zinc-800"
+                    className="text-muted-foreground hover:text-foreground hover:bg-muted"
                   >
                     Mark as Read
                   </Button>
                 </div>
 
                 {/* Reply Box */}
-                <div className="space-y-3">
-                  <div className="relative">
-                    <Textarea
-                      placeholder="Write your reply..."
-                      value={replyText}
-                      onChange={(e) => setReplyText(e.target.value)}
-                      className="min-h-[120px] bg-zinc-800 border-zinc-700 text-white resize-none pr-12"
-                    />
-                    <Button
-                      size="icon"
-                      onClick={handleSendReply}
-                      disabled={!replyText.trim()}
-                      className="absolute bottom-3 right-3 w-9 h-9 bg-gradient-to-r from-[#13005A] to-[#00337C] hover:opacity-90 disabled:opacity-50"
-                    >
-                      <Send className="w-4 h-4" />
-                    </Button>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-2">
-                      <Badge variant="outline" className="border-zinc-700 text-zinc-400 text-xs">
-                        AI Suggest Reply
-                      </Badge>
+                {!selectedMessage.is_replied && (
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <Textarea
+                        placeholder="Write your reply..."
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        className="min-h-[120px] bg-input border-border text-foreground resize-none pr-12"
+                      />
+                      <Button
+                        size="icon"
+                        onClick={handleSendReply}
+                        disabled={!replyText.trim() || isReplying}
+                        className="absolute bottom-3 right-3 w-9 h-9 bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50"
+                      >
+                        {isReplying ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Send className="w-4 h-4" />
+                        )}
+                      </Button>
                     </div>
-                    <span className="text-xs text-zinc-600">{replyText.length} / 500</span>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex gap-2">
+                        <Badge
+                          variant="outline"
+                          className="border-border text-muted-foreground text-xs"
+                        >
+                          AI Suggest Reply
+                        </Badge>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {replyText.length} / 500
+                      </span>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             ) : (
               <div className="text-center py-20">
-                <MessageCircle className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-white mb-2">No message selected</h3>
-                <p className="text-sm text-zinc-500">
+                <MessageCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  No message selected
+                </h3>
+                <p className="text-sm text-muted-foreground">
                   Choose a message from the list to view and reply
                 </p>
               </div>
