@@ -5,7 +5,13 @@ import * as z from "zod";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Sparkles, Loader2 } from "lucide-react";
 import { useRegisterMutation } from "../store/apiSlice";
 import { toast } from "sonner";
@@ -42,11 +48,18 @@ export function SignupPage() {
   const onSubmit = async (data: SignupFormValues) => {
     try {
       const result = await registerUser(data).unwrap();
-      dispatch(setCredentials({ access_token: result.access_token, user: result.user }));
+      dispatch(
+        setCredentials({
+          access_token: result.access_token,
+          user: result.user,
+        }),
+      );
       toast.success("Account created successfully!");
       navigate("/onboarding");
     } catch (err: any) {
-      toast.error(err.data?.detail || "Failed to create account. Please try again.");
+      toast.error(
+        err.data?.detail || "Failed to create account. Please try again.",
+      );
     }
   };
 
@@ -57,12 +70,14 @@ export function SignupPage() {
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
             <Sparkles className="w-6 h-6 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Astra AI</h1>
+          <h1 className="text-2xl font-bold text-foreground">AgentCee</h1>
         </div>
 
         <Card className="border-border bg-card/50 backdrop-blur shadow-xl">
           <CardHeader>
-            <CardTitle className="text-card-foreground">Create your account</CardTitle>
+            <CardTitle className="text-card-foreground">
+              Create your account
+            </CardTitle>
             <CardDescription className="text-muted-foreground">
               Start automating your social media presence with AI
             </CardDescription>
@@ -70,7 +85,9 @@ export function SignupPage() {
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="company_name" className="text-foreground">Company Name</Label>
+                <Label htmlFor="company_name" className="text-foreground">
+                  Company Name
+                </Label>
                 <Input
                   id="company_name"
                   type="text"
@@ -79,11 +96,15 @@ export function SignupPage() {
                   className="bg-input text-foreground placeholder:text-muted-foreground"
                 />
                 {errors.company_name && (
-                  <p className="text-destructive text-xs">{errors.company_name.message}</p>
+                  <p className="text-destructive text-xs">
+                    {errors.company_name.message}
+                  </p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-foreground">Email</Label>
+                <Label htmlFor="email" className="text-foreground">
+                  Email
+                </Label>
                 <Input
                   id="email"
                   type="email"
@@ -92,11 +113,15 @@ export function SignupPage() {
                   className="bg-input text-foreground placeholder:text-muted-foreground"
                 />
                 {errors.email && (
-                  <p className="text-destructive text-xs">{errors.email.message}</p>
+                  <p className="text-destructive text-xs">
+                    {errors.email.message}
+                  </p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-foreground">Password</Label>
+                <Label htmlFor="password" className="text-foreground">
+                  Password
+                </Label>
                 <Input
                   id="password"
                   type="password"
@@ -105,7 +130,9 @@ export function SignupPage() {
                   className="bg-input text-foreground placeholder:text-muted-foreground"
                 />
                 {errors.password && (
-                  <p className="text-destructive text-xs">{errors.password.message}</p>
+                  <p className="text-destructive text-xs">
+                    {errors.password.message}
+                  </p>
                 )}
               </div>
               <Button
@@ -124,8 +151,8 @@ export function SignupPage() {
 
         <p className="text-center text-sm text-muted-foreground mt-4">
           Already have an account?{" "}
-          <button 
-            onClick={() => navigate("/login")} 
+          <button
+            onClick={() => navigate("/login")}
             className="text-primary hover:underline"
           >
             Sign in

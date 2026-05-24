@@ -7,7 +7,7 @@ interface AuthState {
   isAuthenticated: boolean;
 }
 
-const TOKEN_KEY = "astra_access_token";
+const TOKEN_KEY = "AgentCee_access_token";
 
 function loadToken(): string | null {
   try {
@@ -27,7 +27,10 @@ const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    setCredentials(state, action: PayloadAction<{ access_token: string; user: UserProfile }>) {
+    setCredentials(
+      state,
+      action: PayloadAction<{ access_token: string; user: UserProfile }>,
+    ) {
       state.accessToken = action.payload.access_token;
       state.user = action.payload.user;
       state.isAuthenticated = true;

@@ -1,4 +1,4 @@
-# Astra AI Frontend — Full Backend Integration & UI Overhaul
+# AgentCee Frontend — Full Backend Integration & UI Overhaul
 
 ## Goal
 

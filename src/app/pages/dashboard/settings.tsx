@@ -1,4 +1,10 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 import { Label } from "../../components/ui/label";
 import { Switch } from "../../components/ui/switch";
 import { Button } from "../../components/ui/button";
@@ -15,27 +21,37 @@ export function SettingsView() {
     <div className="p-8 space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground mb-2">Settings</h1>
-        <p className="text-muted-foreground">Manage your preferences and account settings</p>
+        <p className="text-muted-foreground">
+          Manage your preferences and account settings
+        </p>
       </div>
 
       {/* Appearance */}
       <Card className="border-border bg-card/50 backdrop-blur shadow-sm">
         <CardHeader>
           <CardTitle className="text-foreground">Appearance</CardTitle>
-          <CardDescription className="text-muted-foreground">Customize how Astra AI looks on your device</CardDescription>
+          <CardDescription className="text-muted-foreground">
+            Customize how AgentCee looks on your device
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label className="text-foreground flex items-center gap-2">
-                {theme === 'dark' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                {theme === "dark" ? (
+                  <Moon className="w-4 h-4" />
+                ) : (
+                  <Sun className="w-4 h-4" />
+                )}
                 Dark Mode
               </Label>
-              <p className="text-sm text-muted-foreground">Toggle between light and dark themes</p>
+              <p className="text-sm text-muted-foreground">
+                Toggle between light and dark themes
+              </p>
             </div>
-            <Switch 
-              checked={theme === 'dark'} 
-              onCheckedChange={() => dispatch(toggleTheme())} 
+            <Switch
+              checked={theme === "dark"}
+              onCheckedChange={() => dispatch(toggleTheme())}
             />
           </div>
         </CardContent>
@@ -45,27 +61,35 @@ export function SettingsView() {
       <Card className="border-border bg-card/50 backdrop-blur shadow-sm">
         <CardHeader>
           <CardTitle className="text-foreground">AI Preferences</CardTitle>
-          <CardDescription className="text-muted-foreground">Customize how the AI assists you</CardDescription>
+          <CardDescription className="text-muted-foreground">
+            Customize how the AI assists you
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label className="text-foreground">Proactive Suggestions</Label>
-              <p className="text-sm text-muted-foreground">Let AI suggest content ideas automatically</p>
+              <p className="text-sm text-muted-foreground">
+                Let AI suggest content ideas automatically
+              </p>
             </div>
             <Switch defaultChecked />
           </div>
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label className="text-foreground">Auto-Schedule</Label>
-              <p className="text-sm text-muted-foreground">Allow AI to schedule posts at optimal times</p>
+              <p className="text-sm text-muted-foreground">
+                Allow AI to schedule posts at optimal times
+              </p>
             </div>
             <Switch />
           </div>
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label className="text-foreground">Smart Captions</Label>
-              <p className="text-sm text-muted-foreground">Generate captions with AI</p>
+              <p className="text-sm text-muted-foreground">
+                Generate captions with AI
+              </p>
             </div>
             <Switch defaultChecked />
           </div>
@@ -76,27 +100,35 @@ export function SettingsView() {
       <Card className="border-border bg-card/50 backdrop-blur shadow-sm">
         <CardHeader>
           <CardTitle className="text-foreground">Notifications</CardTitle>
-          <CardDescription className="text-muted-foreground">Choose what updates you receive</CardDescription>
+          <CardDescription className="text-muted-foreground">
+            Choose what updates you receive
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label className="text-foreground">Email Notifications</Label>
-              <p className="text-sm text-muted-foreground">Receive updates via email</p>
+              <p className="text-sm text-muted-foreground">
+                Receive updates via email
+              </p>
             </div>
             <Switch defaultChecked />
           </div>
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label className="text-foreground">Post Reminders</Label>
-              <p className="text-sm text-muted-foreground">Get notified before scheduled posts</p>
+              <p className="text-sm text-muted-foreground">
+                Get notified before scheduled posts
+              </p>
             </div>
             <Switch defaultChecked />
           </div>
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label className="text-foreground">Weekly Reports</Label>
-              <p className="text-sm text-muted-foreground">Receive weekly analytics summaries</p>
+              <p className="text-sm text-muted-foreground">
+                Receive weekly analytics summaries
+              </p>
             </div>
             <Switch />
           </div>
@@ -107,7 +139,9 @@ export function SettingsView() {
       <Card className="border-border bg-card/50 backdrop-blur shadow-sm">
         <CardHeader>
           <CardTitle className="text-foreground">Account</CardTitle>
-          <CardDescription className="text-muted-foreground">Manage your account details</CardDescription>
+          <CardDescription className="text-muted-foreground">
+            Manage your account details
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -121,7 +155,10 @@ export function SettingsView() {
           </div>
           <div className="space-y-2">
             <Label className="text-foreground">Password</Label>
-            <Button variant="outline" className="w-full border-border text-foreground hover:bg-muted">
+            <Button
+              variant="outline"
+              className="w-full border-border text-foreground hover:bg-muted"
+            >
               Change Password
             </Button>
           </div>

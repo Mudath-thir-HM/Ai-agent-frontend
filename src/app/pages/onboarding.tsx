@@ -1,40 +1,72 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { Progress } from "../components/ui/progress";
-import { Check, Facebook, Instagram, Twitter, ArrowRight, Loader2 } from "lucide-react";
+import {
+  Check,
+  Facebook,
+  Instagram,
+  Twitter,
+  ArrowRight,
+  Loader2,
+} from "lucide-react";
 import { motion } from "motion/react";
-import { useConnectSocialAccountMutation, useGetConnectedPlatformsQuery } from "../store/apiSlice";
+import {
+  useConnectSocialAccountMutation,
+  useGetConnectedPlatformsQuery,
+} from "../store/apiSlice";
 import { toast } from "sonner";
 
 const socialPlatforms = [
-  { id: "facebook", name: "Facebook", icon: Facebook, color: "text-blue-600 bg-blue-100" },
-  { id: "instagram", name: "Instagram", icon: Instagram, color: "text-pink-600 bg-pink-100" },
-  { id: "x", name: "X (Twitter)", icon: Twitter, color: "text-zinc-900 bg-zinc-200 dark:text-zinc-100 dark:bg-zinc-800" },
+  {
+    id: "facebook",
+    name: "Facebook",
+    icon: Facebook,
+    color: "text-blue-600 bg-blue-100",
+  },
+  {
+    id: "instagram",
+    name: "Instagram",
+    icon: Instagram,
+    color: "text-pink-600 bg-pink-100",
+  },
+  {
+    id: "x",
+    name: "X (Twitter)",
+    icon: Twitter,
+    color: "text-zinc-900 bg-zinc-200 dark:text-zinc-100 dark:bg-zinc-800",
+  },
 ];
 
 export function OnboardingPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [isConnecting, setIsConnecting] = useState(false);
-  
+
   const [connectSocialAccount] = useConnectSocialAccountMutation();
-  const { data: connectedPlatforms = [], refetch } = useGetConnectedPlatformsQuery();
+  const { data: connectedPlatforms = [], refetch } =
+    useGetConnectedPlatformsQuery();
 
   const totalSteps = 2;
   const progress = (step / totalSteps) * 100;
 
   const togglePlatform = async (platformId: string) => {
     if (connectedPlatforms.includes(platformId)) return; // Already connected
-    
+
     setIsConnecting(true);
     try {
       // Simulate OAuth popup delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
       const mockAccountId = `${platformId}_${Math.random().toString(36).substring(7)}`;
-      
+
       await connectSocialAccount({
         platform: platformId,
         account_name: `${platformId}_test_account`,
@@ -61,7 +93,10 @@ export function OnboardingPage() {
     <div className="min-h-screen w-full flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-2xl">
         <div className="mb-8">
-          <Progress value={progress} className="h-2 bg-muted [&>div]:bg-primary" />
+          <Progress
+            value={progress}
+            className="h-2 bg-muted [&>div]:bg-primary"
+          />
           <p className="text-sm text-muted-foreground mt-2">
             Step {step} of {totalSteps}
           </p>
@@ -77,9 +112,12 @@ export function OnboardingPage() {
           {step === 1 && (
             <Card className="border-border bg-card/50 backdrop-blur shadow-xl">
               <CardHeader>
-                <CardTitle className="text-foreground text-2xl">Welcome to Astra AI</CardTitle>
+                <CardTitle className="text-foreground text-2xl">
+                  Welcome to AgentCee
+                </CardTitle>
                 <CardDescription className="text-muted-foreground text-base">
-                  Let's get you set up. Connect your social media accounts to get started.
+                  Let's get you set up. Connect your social media accounts to
+                  get started.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -100,10 +138,14 @@ export function OnboardingPage() {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${platform.color}`}>
+                          <div
+                            className={`w-10 h-10 rounded-lg flex items-center justify-center ${platform.color}`}
+                          >
                             <Icon className="w-5 h-5" />
                           </div>
-                          <span className="text-foreground font-medium">{platform.name}</span>
+                          <span className="text-foreground font-medium">
+                            {platform.name}
+                          </span>
                         </div>
                         {isConnected && (
                           <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center">
@@ -132,22 +174,32 @@ export function OnboardingPage() {
           {step === 2 && (
             <Card className="border-border bg-card/50 backdrop-blur shadow-xl">
               <CardHeader>
-                <CardTitle className="text-foreground text-2xl">You're all set!</CardTitle>
+                <CardTitle className="text-foreground text-2xl">
+                  You're all set!
+                </CardTitle>
                 <CardDescription className="text-muted-foreground text-base">
-                  Your AI assistant is ready to help you create and schedule content.
+                  Your AI assistant is ready to help you create and schedule
+                  content.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="bg-muted/50 rounded-lg p-6 mb-6">
-                  <h3 className="text-foreground font-semibold mb-3">Connected Accounts</h3>
+                  <h3 className="text-foreground font-semibold mb-3">
+                    Connected Accounts
+                  </h3>
                   {connectedPlatforms.length > 0 ? (
                     <div className="space-y-2">
                       {connectedPlatforms.map((platformId) => {
-                        const platform = socialPlatforms.find((p) => p.id === platformId);
+                        const platform = socialPlatforms.find(
+                          (p) => p.id === platformId,
+                        );
                         if (!platform) return null;
                         const Icon = platform.icon;
                         return (
-                          <div key={platformId} className="flex items-center gap-2 text-foreground">
+                          <div
+                            key={platformId}
+                            className="flex items-center gap-2 text-foreground"
+                          >
                             <Check className="w-4 h-4 text-accent" />
                             <Icon className="w-4 h-4 text-muted-foreground" />
                             <span>{platform.name}</span>
@@ -156,7 +208,10 @@ export function OnboardingPage() {
                       })}
                     </div>
                   ) : (
-                    <p className="text-muted-foreground text-sm">No accounts connected yet. You can connect them later in Settings.</p>
+                    <p className="text-muted-foreground text-sm">
+                      No accounts connected yet. You can connect them later in
+                      Settings.
+                    </p>
                   )}
                 </div>
 

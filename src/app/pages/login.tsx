@@ -53,7 +53,7 @@ export function LoginPage() {
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
             <Sparkles className="w-6 h-6 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Astra AI</h1>
+          <h1 className="text-2xl font-bold text-foreground">AgentCee</h1>
         </div>
 
         <Card className="border-border bg-card/50 backdrop-blur shadow-xl">

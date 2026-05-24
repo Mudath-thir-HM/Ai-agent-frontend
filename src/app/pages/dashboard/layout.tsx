@@ -1,5 +1,15 @@
 import { Outlet, useNavigate, useLocation } from "react-router";
-import { BarChart3, Calendar, Image, MessageSquare, User, Settings, Sparkles, LogOut, Loader2 } from "lucide-react";
+import {
+  BarChart3,
+  Calendar,
+  Image,
+  MessageSquare,
+  User,
+  Settings,
+  Sparkles,
+  LogOut,
+  Loader2,
+} from "lucide-react";
 import { GlobalToolbar } from "../../components/global-toolbar";
 import { CanvasOverlay } from "../../components/canvas-overlay";
 import { useGetProfileQuery, useGetMessagesQuery } from "../../store/apiSlice";
@@ -8,12 +18,37 @@ import { logout } from "../../store/authSlice";
 import { setCanvasOpen } from "../../store/uiSlice";
 
 const navItems = [
-  { id: "analytics", label: "Analytics", icon: BarChart3, path: "/dashboard/analytics" },
-  { id: "calendar", label: "Content Calendar", icon: Calendar, path: "/dashboard/calendar" },
-  { id: "content", label: "Generated Content", icon: Image, path: "/dashboard/content" },
-  { id: "messages", label: "Messages", icon: MessageSquare, path: "/dashboard/messages" },
+  {
+    id: "analytics",
+    label: "Analytics",
+    icon: BarChart3,
+    path: "/dashboard/analytics",
+  },
+  {
+    id: "calendar",
+    label: "Content Calendar",
+    icon: Calendar,
+    path: "/dashboard/calendar",
+  },
+  {
+    id: "content",
+    label: "Generated Content",
+    icon: Image,
+    path: "/dashboard/content",
+  },
+  {
+    id: "messages",
+    label: "Messages",
+    icon: MessageSquare,
+    path: "/dashboard/messages",
+  },
   { id: "profile", label: "Profile", icon: User, path: "/dashboard/profile" },
-  { id: "settings", label: "Settings", icon: Settings, path: "/dashboard/settings" },
+  {
+    id: "settings",
+    label: "Settings",
+    icon: Settings,
+    path: "/dashboard/settings",
+  },
 ];
 
 export function DashboardLayout() {
@@ -25,9 +60,12 @@ export function DashboardLayout() {
   const { data: profile, isLoading: isProfileLoading } = useGetProfileQuery();
   const { data: messages = [] } = useGetMessagesQuery();
 
-  const unreadMessagesCount = messages.filter(m => !m.is_replied).length;
+  const unreadMessagesCount = messages.filter((m) => !m.is_replied).length;
 
-  const currentPath = location.pathname === "/dashboard" ? "/dashboard/analytics" : location.pathname;
+  const currentPath =
+    location.pathname === "/dashboard"
+      ? "/dashboard/analytics"
+      : location.pathname;
 
   const handleLogout = () => {
     dispatch(logout());
@@ -43,7 +81,7 @@ export function DashboardLayout() {
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
               <Sparkles className="w-5 h-5 text-primary-foreground" />
             </div>
-            <h1 className="text-xl font-bold text-foreground">Astra AI</h1>
+            <h1 className="text-xl font-bold text-foreground">AgentCee</h1>
           </div>
         </div>
 
@@ -82,12 +120,16 @@ export function DashboardLayout() {
               <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
             ) : (
               <div className="flex flex-col">
-                <span className="font-medium text-foreground truncate">{profile?.company_name || profile?.email}</span>
-                <span className="text-xs text-muted-foreground truncate">{profile?.email}</span>
+                <span className="font-medium text-foreground truncate">
+                  {profile?.company_name || profile?.email}
+                </span>
+                <span className="text-xs text-muted-foreground truncate">
+                  {profile?.email}
+                </span>
               </div>
             )}
           </div>
-          
+
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
@@ -107,7 +149,10 @@ export function DashboardLayout() {
       <GlobalToolbar onOpenCanvas={() => dispatch(setCanvasOpen(true))} />
 
       {/* Canvas Overlay */}
-      <CanvasOverlay isOpen={isCanvasOpen} onClose={() => dispatch(setCanvasOpen(false))} />
+      <CanvasOverlay
+        isOpen={isCanvasOpen}
+        onClose={() => dispatch(setCanvasOpen(false))}
+      />
     </div>
   );
 }

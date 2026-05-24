@@ -6,7 +6,7 @@ interface UIState {
   isCanvasOpen: boolean;
 }
 
-const THEME_KEY = "astra_theme";
+const THEME_KEY = "AgentCee_theme";
 
 function loadTheme(): "light" | "dark" {
   try {
@@ -47,5 +47,6 @@ const uiSlice = createSlice({
   },
 });
 
-export const { toggleTheme, setTheme, toggleSidebar, setCanvasOpen } = uiSlice.actions;
+export const { toggleTheme, setTheme, toggleSidebar, setCanvasOpen } =
+  uiSlice.actions;
 export default uiSlice.reducer;
