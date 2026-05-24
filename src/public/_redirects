@@ -1,0 +1,4 @@
+# Rewrite all paths to index.html so React Router handles navigation.
+# Without this every route except / returns 404 on a hard refresh or
+# direct URL visit in Netlify's static file server.
+/*    /index.html    200

@@ -1,24 +1,24 @@
-# Astra AI — Frontend
+# AgentCee — Frontend
 
-A React + Redux social media management dashboard that connects to the Astra AI backend. Handles content generation, post scheduling, inbox management, analytics, and platform tracking — all wired to live API endpoints with no mock data in production flows.
+A React + Redux social media management dashboard that connects to the AgentCee backend. Handles content generation, post scheduling, inbox management, analytics, and platform tracking — all wired to live API endpoints with no mock data in production flows.
 
 ---
 
 ## Tech Stack
 
-| Layer | Library |
-|---|---|
-| Framework | React 18 + Vite 6 |
-| Language | TypeScript 6 |
-| State / Data | Redux Toolkit + RTK Query |
-| Routing | React Router v7 |
-| Styling | Tailwind CSS v4 |
-| Components | shadcn/ui (Radix UI primitives) |
-| Forms | React Hook Form + Zod |
-| Charts | Recharts |
-| Canvas | ReactFlow |
-| Animations | Motion (Framer Motion v12) |
-| Toasts | Sonner |
+| Layer        | Library                         |
+| ------------ | ------------------------------- |
+| Framework    | React 18 + Vite 6               |
+| Language     | TypeScript 6                    |
+| State / Data | Redux Toolkit + RTK Query       |
+| Routing      | React Router v7                 |
+| Styling      | Tailwind CSS v4                 |
+| Components   | shadcn/ui (Radix UI primitives) |
+| Forms        | React Hook Form + Zod           |
+| Charts       | Recharts                        |
+| Canvas       | ReactFlow                       |
+| Animations   | Motion (Framer Motion v12)      |
+| Toasts       | Sonner                          |
 
 ---
 
@@ -26,7 +26,7 @@ A React + Redux social media management dashboard that connects to the Astra AI 
 
 - Node.js 18+
 - pnpm (recommended) or npm
-- A running instance of the Astra AI backend (see backend README)
+- A running instance of the AgentCee backend (see backend README)
 
 ---
 
@@ -142,18 +142,23 @@ The backend uses `sender_name` / `message_text` for messages and `platform` / `g
 ## Key Features
 
 ### Content Calendar
+
 Fetches scheduled posts from `GET /scheduler/` and renders them on a month grid. Clicking any day opens `SchedulePostDialog` pre-filled with that date. Month navigation (prev/next) is handled client-side.
 
 ### AI Content Canvas
+
 A ReactFlow-based node editor accessible via the global toolbar. Nodes: **Image** (upload a reference image), **AI Prompt** (caption or image generation mode, adjustable creativity), **Output** (live platform preview with character limit indicators for Instagram, X, and Facebook). The output node's Schedule button wires directly to `POST /scheduler/`.
 
 ### Messages Inbox
+
 Loads all messages from `GET /messages/`. Selecting a message opens the reply panel. The **AI Suggest Reply** badge is wired to `POST /messages/ai-suggest`, which returns 3 reply options and a sentiment classification. Clicking a suggestion auto-fills the reply textarea.
 
 ### Analytics Dashboard
+
 Three RTK Query calls run in parallel: overview stats, weekly engagement (line chart), and platform breakdown (bar chart). All charts use Recharts with theme-aware colors (`var(--primary)`, `var(--border)`, etc.) so they adapt to light/dark mode.
 
 ### Theme System
+
 `ThemeProvider` reads the `ui.theme` value from Redux and adds/removes the `.dark` class on `<html>`. All colors are defined as CSS custom properties in `theme.css` and consumed via Tailwind's `bg-background`, `text-foreground`, `border-border`, etc. Toggling theme from Settings takes effect instantly across all pages.
 
 ---
@@ -193,9 +198,9 @@ const { data, isLoading } = useGetMyThingQuery();
 
 ## Scripts
 
-| Command | Description |
-|---|---|
-| `pnpm dev` | Start Vite dev server with HMR |
+| Command      | Description                                |
+| ------------ | ------------------------------------------ |
+| `pnpm dev`   | Start Vite dev server with HMR             |
 | `pnpm build` | TypeScript compile + Vite production build |
 
 ---
